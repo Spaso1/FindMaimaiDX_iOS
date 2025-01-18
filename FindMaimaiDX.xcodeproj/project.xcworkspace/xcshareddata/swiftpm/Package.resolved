@@ -1,0 +1,15 @@
+{
+  "originHash" : "0139dcbb5e4ac5f3e583b1e9680b929a62625aa6f8f4d76333aecbd926cdc194",
+  "pins" : [
+    {
+      "identity" : "swiftyjson",
+      "kind" : "remoteSourceControl",
+      "location" : "https://gitee.com/mirrors/SwiftyJSON",
+      "state" : {
+        "revision" : "af76cf3ef710b6ca5f8c05f3a31307d44a3c5828",
+        "version" : "5.0.2"
+      }
+    }
+  ],
+  "version" : 3
+}

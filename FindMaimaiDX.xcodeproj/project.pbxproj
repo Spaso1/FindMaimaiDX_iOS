@@ -6,6 +6,10 @@
 	objectVersion = 77;
 	objects = {
 
+/* Begin PBXBuildFile section */
+		223511012D3B5C6F00651AF9 /* SwiftyJSON in Frameworks */ = {isa = PBXBuildFile; productRef = 223511002D3B5C6F00651AF9 /* SwiftyJSON */; };
+/* End PBXBuildFile section */
+
 /* Begin PBXContainerItemProxy section */
 		223510E32D3B5C1C00651AF9 /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
@@ -29,9 +33,22 @@
 		223510EC2D3B5C1C00651AF9 /* FindMaimaiDXUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = FindMaimaiDXUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
+/* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
+		22780B4B2D3BDD7C0062BA51 /* Exceptions for "FindMaimaiDX" folder in "FindMaimaiDX" target */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				Info.plist,
+			);
+			target = 223510D12D3B5C1B00651AF9 /* FindMaimaiDX */;
+		};
+/* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
+
 /* Begin PBXFileSystemSynchronizedRootGroup section */
 		223510D42D3B5C1B00651AF9 /* FindMaimaiDX */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+				22780B4B2D3BDD7C0062BA51 /* Exceptions for "FindMaimaiDX" folder in "FindMaimaiDX" target */,
+			);
 			path = FindMaimaiDX;
 			sourceTree = "<group>";
 		};
@@ -52,6 +69,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				223511012D3B5C6F00651AF9 /* SwiftyJSON in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -112,6 +130,7 @@
 			);
 			name = FindMaimaiDX;
 			packageProductDependencies = (
+				223511002D3B5C6F00651AF9 /* SwiftyJSON */,
 			);
 			productName = FindMaimaiDX;
 			productReference = 223510D22D3B5C1B00651AF9 /* FindMaimaiDX.app */;
@@ -195,6 +214,9 @@
 			);
 			mainGroup = 223510C92D3B5C1B00651AF9;
 			minimizedProjectReferenceProxies = 1;
+			packageReferences = (
+				223510FF2D3B5C6F00651AF9 /* XCRemoteSwiftPackageReference "SwiftyJSON" */,
+			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = 223510D32D3B5C1B00651AF9 /* Products */;
 			projectDirPath = "";
@@ -398,6 +420,7 @@
 				DEVELOPMENT_ASSET_PATHS = "\"FindMaimaiDX/Preview Content\"";
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = FindMaimaiDX/Info.plist;
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
@@ -426,6 +449,7 @@
 				DEVELOPMENT_ASSET_PATHS = "\"FindMaimaiDX/Preview Content\"";
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = FindMaimaiDX/Info.plist;
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
@@ -552,6 +576,25 @@
 			defaultConfigurationName = Release;
 		};
 /* End XCConfigurationList section */
+
+/* Begin XCRemoteSwiftPackageReference section */
+		223510FF2D3B5C6F00651AF9 /* XCRemoteSwiftPackageReference "SwiftyJSON" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://gitee.com/mirrors/SwiftyJSON";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 5.0.2;
+			};
+		};
+/* End XCRemoteSwiftPackageReference section */
+
+/* Begin XCSwiftPackageProductDependency section */
+		223511002D3B5C6F00651AF9 /* SwiftyJSON */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 223510FF2D3B5C6F00651AF9 /* XCRemoteSwiftPackageReference "SwiftyJSON" */;
+			productName = SwiftyJSON;
+		};
+/* End XCSwiftPackageProductDependency section */
 	};
 	rootObject = 223510CA2D3B5C1B00651AF9 /* Project object */;
 }
