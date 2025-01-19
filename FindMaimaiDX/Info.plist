@@ -7,5 +7,9 @@
 		<key>NSAllowsArbitraryLoads</key>
 		<true/>
 	</dict>
+    <key>NSLocationWhenInUseUsageDescription</key>
+    <string>我们需要访问您的位置以获取城市名称和经纬度。</string>
+    <key>AMapAppKey</key>
+    <string>bb0e04ceb735481cf4e461628345f4ec</string>
 </dict>
 </plist>
