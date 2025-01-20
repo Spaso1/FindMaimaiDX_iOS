@@ -16,7 +16,7 @@ struct ContentView: View {
                     .foregroundColor(.pink)
                     .font(.headline)
                     .frame(maxWidth: .infinity, alignment: .leading)
-
+                    .lineLimit(1)
                 if let errorMessage = errorMessage {
                     Text(errorMessage)
                         .padding()
@@ -58,7 +58,8 @@ struct ContentView: View {
                     if let city = city {
                         fetchPlaces(city: city)
                     } else {
-                        errorMessage = "无法获取城市名称"
+                        fetchPlaces(city: "北京")
+                        infoText = "FindMaimaiDX - 无法定位，使用默认位置：BeiJing"
                     }
                 }
             }
@@ -116,8 +117,12 @@ struct ContentView: View {
     }
 
     var favoritePlaces: [Place] {
-        places.filter { favoritePlaceIds.contains($0.id.hashValue) }
-    }
+           places.filter { place in
+               // 使用 place.id 直接比较而不是 hashValue，确保 id 类型一致
+               favoritePlaceIds.contains(place.id)
+           }
+       }
+
 
     var sortedPlaces: [Place] {
         places // 不再需要排序
