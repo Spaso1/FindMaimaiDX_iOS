@@ -1,11 +1,10 @@
-// ContentView.swift
 import SwiftUI
 
 struct ContentView: View {
     @State private var places: [Place] = []
+    @State private var favoritePlaceIds: Set<Int> = []
     @State private var infoText: String = "卡在这个页面打开定位权限并且关闭夜间模式"
     @State private var errorMessage: String? = nil
-    @State private var isActionSheetPresented = false
     @StateObject private var locationViewModel = LocationViewModel()
 
     var body: some View {
@@ -13,11 +12,11 @@ struct ContentView: View {
             VStack {
                 Text(infoText)
                     .padding()
-                    .background(Color.white) // 保持背景颜色为白色
-                    .foregroundColor(.pink) // 修改字体颜色为粉色
+                    .background(Color.white)
+                    .foregroundColor(.pink)
                     .font(.headline)
-                    .frame(maxWidth: .infinity, alignment: .leading) // 文本靠左显示
-                
+                    .frame(maxWidth: .infinity, alignment: .leading)
+
                 if let errorMessage = errorMessage {
                     Text(errorMessage)
                         .padding()
@@ -25,63 +24,50 @@ struct ContentView: View {
                         .foregroundColor(.white)
                         .font(.subheadline)
                 }
-                
-                List(places) { place in
-                    NavigationLink(destination: PageView(place: place)) {
-                        VStack(alignment: .leading) {
-                            if let name = place.name {
-                                Text(name)
-                                    .font(.headline)
-                            } else {
-                                Text("Unknown Name")
-                                    .font(.headline)
-                                    .foregroundColor(.red)
-                            }
-                            if let address = place.address {
-                                Text(address)
-                                    .font(.subheadline)
-                            } else {
-                                Text("Unknown Address")
-                                    .font(.subheadline)
-                                    .foregroundColor(.red)
-                            }
-                            if let area = place.area {
-                                Text(area)
-                                    .font(.caption)
-                            }
+
+                TabView {
+                    List(sortedPlaces) { place in
+                        NavigationLink(destination: PageView(place: place, favoritePlaceIds: $favoritePlaceIds)) {
+                            PlaceRow(place: place)
                         }
+                    }
+                    .tabItem {
+                        Image(systemName: "house")
+                        Text("机厅")
+                    }
+
+                    List(favoritePlaces) { place in
+                        NavigationLink(destination: PageView(place: place, favoritePlaceIds: $favoritePlaceIds)) {
+                            PlaceRow(place: place)
+                        }
+                    }
+                    .tabItem {
+                        Image(systemName: "star.fill")
+                        Text("收藏")
                     }
                 }
             }
             .onAppear {
-                print("ContentView onAppear")
-                locationViewModel.startUpdatingLocation()
-            }
-            .onChange(of: locationViewModel.isLocationAuthorized) { isAuthorized in
-                if isAuthorized {
-                    if let city = locationViewModel.city {
-                        print("Fetching places for city: \(city)")
+                loadFavoritePlaceIds()
+                
+                // 使用预定义的经纬度来测试
+                let testLatitude: Double = 39.90923
+                let testLongitude: Double = 116.397428
+                
+                locationViewModel.fetchCityName(latitude: testLatitude, longitude: testLongitude) { city in
+                    if let city = city {
                         fetchPlaces(city: city)
                     } else {
-                        errorMessage = "Failed to get city name"
-                        print("Failed to get city name")
+                        errorMessage = "无法获取城市名称"
                     }
                 }
             }
             .onChange(of: locationViewModel.formattedAddress) { formattedAddress in
-                if let formattedAddress = formattedAddress {
-                    infoText = formattedAddress
-                }
+                infoText = formattedAddress ?? ""
             }
             .overlay(
                 NavigationLink(destination: ActionSheetView()) {
-                    Image(systemName: "plus")
-                        .font(.largeTitle)
-                        .foregroundColor(.white)
-                        .padding()
-                        .background(Color.blue)
-                        .clipShape(Circle())
-                        .shadow(radius: 10)
+                    PlusButton()
                 }
                 .padding(),
                 alignment: .bottomTrailing
@@ -90,55 +76,81 @@ struct ContentView: View {
         }
         .navigationViewStyle(StackNavigationViewStyle())
     }
-    
-    func fetchPlaces(city: String) {
+
+    private func fetchPlaces(city: String) {
         guard let url = URL(string: "http://mai.godserver.cn:11451/api/mai/v1/search?prompt1=\(city)&status=市") else {
-            print("Invalid URL")
             errorMessage = "Invalid URL"
             return
         }
-        
-        print("Fetching places from URL: \(url)")
-        
+
         URLSession.shared.dataTask(with: url) { data, response, error in
             if let error = error {
-                print("Error fetching places: \(error)")
                 errorMessage = "Error fetching places: \(error.localizedDescription)"
                 return
             }
-            
+
             guard let data = data else {
-                print("No data received")
                 errorMessage = "No data received"
                 return
             }
-            
+
             do {
-                let decoder = JSONDecoder()
-                let places = try decoder.decode([Place].self, from: data)
+                let fetchedPlaces = try JSONDecoder().decode([Place].self, from: data)
                 DispatchQueue.main.async {
-                    self.places = places
-                    print("Places fetched successfully: \(places)")
+                    self.places = fetchedPlaces
                 }
             } catch {
-                print("Error decoding JSON: \(error)")
-                print("JSON data: \(String(data: data, encoding: .utf8) ?? "Invalid data")")
                 errorMessage = "Error decoding JSON: \(error.localizedDescription)"
             }
         }.resume()
     }
+
+    private func loadFavoritePlaceIds() {
+        if let savedFavorites = UserDefaults.standard.array(forKey: "favoritePlaceIds") as? [Int] {
+            favoritePlaceIds = Set(savedFavorites)
+        }
+    }
+
+    private func saveFavoritePlaceIds() {
+        UserDefaults.standard.set(Array(favoritePlaceIds), forKey: "favoritePlaceIds")
+    }
+
+    var favoritePlaces: [Place] {
+        places.filter { favoritePlaceIds.contains($0.id.hashValue) }
+    }
+
+    var sortedPlaces: [Place] {
+        places // 不再需要排序
+    }
 }
 
-struct ActionSheetView: View {
+// 辅助视图组件
+struct PlaceRow: View {
+    let place: Place
+    
     var body: some View {
-        VStack {
-            Text("Hello")
-                .padding()
-                .background(Color.white) // 保持背景颜色为白色
-                .foregroundColor(.pink) // 修改字体颜色为粉色
+        VStack(alignment: .leading) {
+            Text(place.name ?? "Unknown Name")
                 .font(.headline)
-                .frame(maxWidth: .infinity, alignment: .leading) // 文本靠左显示
+                .foregroundColor(place.name == nil ? .red : .primary)
+            Text(place.address ?? "Unknown Address")
+                .font(.subheadline)
+                .foregroundColor(place.address == nil ? .red : .primary)
+            Text(place.area ?? "")
+                .font(.caption)
         }
+    }
+}
+
+struct PlusButton: View {
+    var body: some View {
+        Image(systemName: "plus")
+            .font(.largeTitle)
+            .foregroundColor(.white)
+            .padding()
+            .background(Color.blue)
+            .clipShape(Circle())
+            .shadow(radius: 10)
     }
 }
 

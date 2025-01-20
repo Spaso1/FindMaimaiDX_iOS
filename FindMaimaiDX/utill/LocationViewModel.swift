@@ -1,67 +1,29 @@
-// LocationViewModel.swift
 import Foundation
-import CoreLocation
 
-class LocationViewModel: NSObject, ObservableObject, CLLocationManagerDelegate {
-    private var locationManager: CLLocationManager
+class LocationViewModel: ObservableObject {
     @Published var city: String?
-    @Published var latitude: Double?
-    @Published var longitude: Double?
-    @Published var errorMessage: String?
-    @Published var isLocationAuthorized: Bool = false
     @Published var formattedAddress: String?
     private let apiKey = "bb0e04ceb735481cf4e461628345f4ec" // 替换为你的高德地图 API Key
-    private let defaultCity = "北京"
-
-    override init() {
-        locationManager = CLLocationManager()
-        super.init()
-        locationManager.delegate = self
-        locationManager.desiredAccuracy = kCLLocationAccuracyBest
-        locationManager.requestWhenInUseAuthorization()
-        print("LocationViewModel initialized")
-    }
-
-    func startUpdatingLocation() {
-        locationManager.startUpdatingLocation()
-    }
-
-    func locationManager(_ manager: CLLocationManager, didUpdateLocations locations: [CLLocation]) {
-        guard let location = locations.last else {
-            return
-        }
-        latitude = location.coordinate.latitude
-        longitude = location.coordinate.longitude
-        fetchCityName(from: location)
-    }
-
-    func locationManager(_ manager: CLLocationManager, didFailWithError error: Error) {
-        errorMessage = "Failed to find user's location: \(error.localizedDescription)"
-    }
-
-    private func fetchCityName(from location: CLLocation) {
-        guard let latitude = latitude, let longitude = longitude else {
-            return
-        }
-        
+    
+    func fetchCityName(latitude: Double, longitude: Double, completion: @escaping (String?) -> Void) {
         guard let url = URL(string: "https://restapi.amap.com/v3/geocode/regeo?location=\(longitude),\(latitude)&key=\(apiKey)&output=json") else {
-            errorMessage = "Invalid URL"
+            completion("北京")
             return
         }
         
         URLSession.shared.dataTask(with: url) { data, response, error in
             if let error = error {
+                print("Failed to fetch city name: \(error.localizedDescription)")
                 DispatchQueue.main.async {
-                    self.errorMessage = "Failed to fetch city name: \(error.localizedDescription)"
-                    self.setDefaultCity()
+                    completion(nil)
                 }
                 return
             }
             
             guard let data = data else {
+                print("No data received")
                 DispatchQueue.main.async {
-                    self.errorMessage = "No data received"
-                    self.setDefaultCity()
+                    completion(nil)
                 }
                 return
             }
@@ -73,45 +35,27 @@ class LocationViewModel: NSObject, ObservableObject, CLLocationManagerDelegate {
                     DispatchQueue.main.async {
                         self.city = city
                         self.formattedAddress = "FindMaimaiDX \(formattedAddress)"
-                        self.isLocationAuthorized = true
+                        completion(city)
                     }
                 } else {
                     DispatchQueue.main.async {
-                        self.errorMessage = "No city found"
-                        self.setDefaultCity()
+                        completion(nil)
                     }
                 }
             } catch {
+                print("Error decoding JSON: \(error.localizedDescription)")
                 DispatchQueue.main.async {
-                    self.errorMessage = "Error decoding JSON: \(error.localizedDescription)"
-                    self.setDefaultCity()
+                    completion(nil)
                 }
             }
         }.resume()
     }
-
-    private func setDefaultCity() {
-        city = defaultCity
-        formattedAddress = "FindMaimaiDX 北京"
-        isLocationAuthorized = true
-    }
-
-    func locationManager(_ manager: CLLocationManager, didChangeAuthorization status: CLAuthorizationStatus) {
-        switch status {
-        case .authorizedWhenInUse, .authorizedAlways:
-            startUpdatingLocation()
-        case .denied, .restricted, .notDetermined:
-            DispatchQueue.main.async {
-                self.errorMessage = "Location access denied"
-                self.setDefaultCity()
-            }
-        @unknown default:
-            break
-        }
-    }
 }
 
 struct GeocodeResponse: Codable {
+    let status: String
+    let info: String
+    let infocode: String
     let regeocode: Regeocode?
 }
 
