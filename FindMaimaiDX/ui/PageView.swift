@@ -1,145 +1,168 @@
 import SwiftUI
+import WebKit // 导入WebKit以使用WebView
 
 struct PageView: View {
     @State var place: Place
-    @Binding var favoritePlaceIds: Set<Int> // 新增绑定属性
+    @Binding var favoritePlaceIds: Set<Int>
     @State private var markets: [Market] = []
     @State private var isLoading = false
     @State private var errorMessage: String? = nil
     @State private var showToast = false
     @State private var toastMessage = ""
-    @State private var hasLiked = false // 新增状态变量
-    @State private var hasDisliked = false // 新增状态变量
+    @State private var hasLiked = false
+    @State private var hasDisliked = false
     
     var body: some View {
-        VStack(alignment: .leading) {
-            if let address = place.address {
-                Text("地址: \(address)")
-                    .font(.subheadline)
-                    .foregroundColor(.blue)
-            } else {
-                Text("未知地址")
-                    .font(.subheadline)
-                    .foregroundColor(.red)
+        ScrollView {
+            VStack(alignment: .leading, spacing: 16) {
+                // 基本信息网格布局
+                LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 16), count: 2), spacing: 16) {
+                    // 第一行
+                    InfoCell(title: "地址", value: place.address ?? "未知", color: .blue)
+                    InfoCell(title: "总数量", value: place.count?.description ?? "未知", color: .purple)
+                    
+                    // 第二行
+                    InfoCell(title: "经度", value: place.x?.description ?? "未知", color: .gray)
+                    InfoCell(title: "纬度", value: place.y?.description ?? "未知", color: .gray)
+                    
+                    // 第三行
+                    InfoCell(title: "好评", value: place.good?.description ?? "未知", color: .green)
+                    InfoCell(title: "差评", value: place.bad?.description ?? "未知", color: .red)
+                    
+                    // 第四行
+                    InfoCell(title: "国机数量", value: place.num?.description ?? "未知", color: .purple)
+                    InfoCell(title: "其他数量", value: place.numJ?.description ?? "未知", color: .purple)
+                }
+                .padding(.bottom, 16)
+                
+                // 点赞和踩按钮
+                HStack(spacing: 20) {
+                    Button(action: {
+                        if !hasLiked {
+                            likeMarket(placeId: place.id, typeId: 1) { _ in
+                                hasLiked.toggle()
+                                if hasDisliked {
+                                    hasDisliked.toggle()
+                                }
+                            }
+                        }
+                    }) {
+                        HStack {
+                            Image(systemName: hasLiked ? "hand.thumbsup.fill" : "hand.thumbsup")
+                                .font(.system(size: 20))
+                            Text("点赞")
+                                .font(.subheadline)
+                        }
+                        .padding(10)
+                        .background(hasLiked ? Color.blue.opacity(0.2) : Color.gray.opacity(0.2))
+                        .cornerRadius(8)
+                        .foregroundColor(hasLiked ? .blue : .gray)
+                    }
+                    
+                    Button(action: {
+                        if !hasDisliked {
+                            dislikeMarket(placeId: place.id, typeId: 2) { _ in
+                                hasDisliked.toggle()
+                                if hasLiked {
+                                    hasLiked.toggle()
+                                }
+                            }
+                        }
+                    }) {
+                        HStack {
+                            Image(systemName: hasDisliked ? "hand.thumbsdown.fill" : "hand.thumbsdown")
+                                .font(.system(size: 20))
+                            Text("踩")
+                                .font(.subheadline)
+                        }
+                        .padding(10)
+                        .background(hasDisliked ? Color.red.opacity(0.2) : Color.gray.opacity(0.2))
+                        .cornerRadius(8)
+                        .foregroundColor(hasDisliked ? .red : .gray)
+                    }
+                }
+                .padding(.bottom, 16)
+                
+                // WebView
+                if let x = place.x, let y = place.y, let city = place.city {
+                    let webViewURL = "https://www.godserver.cn/mapmaimai?type=phone&la=\(y)&lo=\(x)&city=\(city.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? "")"
+                    
+                    WebView(urlString: webViewURL)
+                        .frame(height: 300)
+                        .cornerRadius(10)
+                        .shadow(radius: 5)
+                        .padding(.bottom, 16)
+                    
+                } else {
+                    Text("无法加载地图: 缺少位置信息")
+                        .foregroundColor(.red)
+                        .padding(.bottom, 16)
+                }
+                
+                // 市场列表
+                if isLoading {
+                    ProgressView()
+                        .padding(.top, 40)
+                } else if let errorMessage = errorMessage {
+                    Text(errorMessage)
+                        .foregroundColor(.red)
+                        .padding(.top, 40)
+                } else if !markets.isEmpty {
+                    VStack(alignment: .leading) {
+                        Text("附近商超")
+                            .font(.headline)
+                            .padding(.bottom, 8)
+                        
+                        ForEach(markets) { market in
+                            VStack(alignment: .leading, spacing: 4) {
+                                Text(market.marketName)
+                                    .font(.headline)
+                                    .foregroundColor(.white)
+                                Text("距离机厅: \(market.distance) 米")
+                                    .font(.subheadline)
+                                    .foregroundColor(.white)
+                            }
+                            .padding()
+                            .background(
+                                LinearGradient(gradient: Gradient(colors: [Color.green.opacity(0.7), Color.blue.opacity(0.7)]),
+                                startPoint: .topLeading,
+                                endPoint: .bottomTrailing
+                            )
+                            .cornerRadius(10)
+                            .shadow(radius: 5)
+                            .padding(.bottom, 8)
+                        )}
+                    }
+                }
+                
+                Spacer()
             }
-            
-            if let x = place.x {
-                Text("经度: \(x)")
-                    .font(.caption)
-                    .foregroundColor(.gray)
-            } else {
-                Text("未知经度")
-                    .font(.caption)
-                    .foregroundColor(.red)
+            .padding()
+            .onAppear() {
+                if let x = place.x, let y = place.y, let city = place.city {
+                    let webViewURL = "https://www.godserver.cn/mapmaimai?type=phone&la=\(y)&lo=\(x)&city=\(city.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? "")"
+                    print(webViewURL)
+                }
             }
-            
-            if let y = place.y {
-                Text("纬度: \(y)")
-                    .font(.caption)
-                    .foregroundColor(.gray)
-            } else {
-                Text("未知纬度")
-                    .font(.caption)
-                    .foregroundColor(.red)
-            }
-            
-            if let count = place.count {
-                Text("总数量: \(count)")
-                    .font(.caption)
-                    .foregroundColor(.gray)
-            } else {
-                Text("未知总数量")
-                    .font(.caption)
-                    .foregroundColor(.red)
-            }
-            
-            if let good = place.good {
-                Text("好评: \(good)")
-                    .font(.caption)
-                    .foregroundColor(.green)
-            } else {
-                Text("未知好评")
-                    .font(.caption)
-                    .foregroundColor(.red)
-            }
-            
-            if let bad = place.bad {
-                Text("差评: \(bad)")
-                    .font(.caption)
-                    .foregroundColor(.red)
-            } else {
-                Text("未知差评")
-                    .font(.caption)
-                    .foregroundColor(.red)
-            }
-            
-            if let num = place.num {
-                Text("国机数量: \(num)")
-                    .font(.caption)
-                    .foregroundColor(.purple)
-            } else {
-                Text("未知国机数量")
-                    .font(.caption)
-                    .foregroundColor(.red)
-            }
-            
-            if let numJ = place.numJ {
-                Text("其他数量: \(numJ)")
-                    .font(.caption)
-                    .foregroundColor(.purple)
-            } else {
-                Text("未知其他数量")
-                    .font(.caption)
-                    .foregroundColor(.red)
-            }
-            
-            Spacer()
+            // Toast 提示
             if showToast {
                 ToastView(message: toastMessage)
                     .transition(.opacity)
-                    .padding(.bottom, 20)
                     .onAppear {
                         DispatchQueue.main.asyncAfter(deadline: .now() + 2) {
                             showToast = false
                         }
                     }
             }
-            // 显示 markets 列表
-            if isLoading {
-                ProgressView()
-            } else if let errorMessage = errorMessage {
-                Text(errorMessage)
-                    .foregroundColor(.red)
-            } else {
-                List(markets) { market in
-                    VStack(alignment: .leading) { // 确保 VStack 靠左对齐
-                        Text(market.marketName)
-                            .font(.headline)
-                            .foregroundColor(.white)
-                        Text("距离机厅: \(market.distance) 米")
-                            .font(.subheadline)
-                            .foregroundColor(.white)
-                    }
-                    .padding()
-                    .background(
-                        LinearGradient(gradient: Gradient(colors: [Color.green.opacity(0.7), Color.blue.opacity(0.7)]), startPoint: .topLeading, endPoint: .bottomTrailing)
-                    )
-                    .cornerRadius(10)
-                    .shadow(radius: 5)
-                }
-                .listStyle(PlainListStyle())
-                .padding(.leading, 10)
-                
-            }
         }
-        .padding()
         .navigationTitle(place.name ?? "地点详情")
         .toolbar {
             Button(action: {
                 toggleFavorite()
             }) {
                 Image(systemName: isFavorite ? "star.fill" : "star")
-                    .font(.largeTitle)
+                    .font(.title2)
+                    .foregroundColor(isFavorite ? .yellow : .gray)
             }
         }
         .onAppear {
@@ -155,21 +178,59 @@ struct PageView: View {
                 }
             }
             
-            // 检查是否已经点赞或踩过
             hasLiked = UserDefaults.standard.bool(forKey: "hasLiked_\(place.id)")
             hasDisliked = UserDefaults.standard.bool(forKey: "hasDisliked_\(place.id)")
-            print("Initial state: hasLiked = \(hasLiked), hasDisliked = \(hasDisliked)")
         }
     }
     
+    // 自定义信息单元格视图
+    struct InfoCell: View {
+        let title: String
+        let value: String
+        let color: Color
+        
+        var body: some View {
+            VStack(alignment: .leading, spacing: 4) {
+                Text(title)
+                    .font(.caption)
+                    .foregroundColor(.gray)
+                Text(value)
+                    .font(.subheadline)
+                    .foregroundColor(color)
+            }
+            .padding(8)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .background(Color(.systemBackground))
+            .cornerRadius(8)
+            .shadow(color: Color.black.opacity(0.1), radius: 3, x: 0, y: 2)
+        }
+    }
+    
+    // WebView实现
+    struct WebView: UIViewRepresentable {
+        let urlString: String
+        
+        func makeUIView(context: Context) -> WKWebView {
+            let webView = WKWebView()
+            return webView
+        }
+        
+        func updateUIView(_ uiView: WKWebView, context: Context) {
+            if let url = URL(string: urlString) {
+                let request = URLRequest(url: url)
+                uiView.load(request)
+            }
+        }
+    }
+    
+    // 其他方法保持不变...
     func fetchMarkets(for placeId: Int, completion: @escaping ([Market]?) -> Void) {
-        let urlString = "http://mai.godserver.cn:11451/api/mai/v1/near?id=\(placeId)"
+        let urlString = "https://mais.godserver.cn/api/mai/v1/near?id=\(placeId)"
         guard let url = URL(string: urlString) else {
             completion(nil)
             return
         }
         
-        print("Fetching markets for placeId: \(placeId)")
         URLSession.shared.dataTask(with: url) { data, response, error in
             if let error = error {
                 print("Error fetching markets: \(error)")
@@ -185,7 +246,6 @@ struct PageView: View {
             
             do {
                 let markets = try JSONDecoder().decode([Market].self, from: data)
-                print("Markets fetched successfully: \(markets)")
                 completion(markets)
             } catch {
                 print("Error decoding JSON: \(error)")
@@ -195,13 +255,12 @@ struct PageView: View {
     }
     
     func likeMarket(placeId: Int, typeId: Int, completion: @escaping ([Market]?) -> Void) {
-        let urlString = "http://mai.godserver.cn:11451/api/mai/v1/place?id=\(placeId)&type=\(typeId)"
+        let urlString = "https://mais.godserver.cn/api/mai/v1/place?id=\(placeId)&type=\(typeId)"
         guard let url = URL(string: urlString) else {
             completion(nil)
             return
         }
         
-        print("Sending like request with typeId: \(typeId) for placeId: \(placeId)")
         URLSession.shared.dataTask(with: url) { data, response, error in
             if let error = error {
                 print("Error sending like request: \(error)")
@@ -209,38 +268,23 @@ struct PageView: View {
                 return
             }
             
-            guard let data = data else {
-                print("No data received in like request")
-                completion(nil)
-                return
-            }
-            
-            do {
-                showToast(message: "操作成功")
-                if typeId == 1 {
+            if typeId == 1 {
+                DispatchQueue.main.async {
                     place.good = (place.good ?? 0) + 1
-                    print("Updated place.good: \(place.good ?? 0)")
-                } else if typeId == 4 {
-                    place.good = (place.good ?? 0) + 1
-                    place.bad = (place.bad ?? 0) - 1
-                    print("Updated place.good: \(place.good ?? 0), place.bad: \(place.bad ?? 0)")
+                    showToast(message: "点赞成功")
                 }
-                completion(nil)
-            } catch {
-                print("Error decoding JSON in like request: \(error)")
-                completion(nil)
             }
+            completion(nil)
         }.resume()
     }
     
     func dislikeMarket(placeId: Int, typeId: Int, completion: @escaping ([Market]?) -> Void) {
-        let urlString = "http://mai.godserver.cn:11451/api/mai/v1/place?id=\(placeId)&type=\(typeId)"
+        let urlString = "https://mais.godserver.cn/api/mai/v1/place?id=\(placeId)&type=\(typeId)"
         guard let url = URL(string: urlString) else {
             completion(nil)
             return
         }
         
-        print("Sending dislike request with typeId: \(typeId) for placeId: \(placeId)")
         URLSession.shared.dataTask(with: url) { data, response, error in
             if let error = error {
                 print("Error sending dislike request: \(error)")
@@ -248,34 +292,19 @@ struct PageView: View {
                 return
             }
             
-            guard let data = data else {
-                print("No data received in dislike request")
-                completion(nil)
-                return
-            }
-            
-            do {
-                showToast(message: "操作成功")
-                if typeId == 2 {
+            if typeId == 2 {
+                DispatchQueue.main.async {
                     place.bad = (place.bad ?? 0) + 1
-                    print("Updated place.bad: \(place.bad ?? 0)")
-                } else if typeId == 3 {
-                    place.bad = (place.bad ?? 0) + 1
-                    place.good = (place.good ?? 0) - 1
-                    print("Updated place.bad: \(place.bad ?? 0), place.good: \(place.good ?? 0)")
+                    showToast(message: "已踩")
                 }
-                completion(nil)
-            } catch {
-                print("Error decoding JSON in dislike request: \(error)")
-                completion(nil)
             }
+            completion(nil)
         }.resume()
     }
     
     func showToast(message: String) {
         toastMessage = message
         showToast = true
-        print("Showing toast message: \(message)")
     }
     
     var isFavorite: Bool {
@@ -298,9 +327,11 @@ struct PageView: View {
 
 struct PageView_Previews: PreviewProvider {
     static var previews: some View {
-        PageView(
-            place: Place(id: 0, name: "天河城", province: "广东省", city: "广州市", area: "天河区", address: "天河区天河城", isUse: 1, x: 113.322647, y: 23.131985, count: 10, good: 5, bad: 2, num: 3, numJ: 1),
-            favoritePlaceIds: .constant([])
-        )
+        NavigationView {
+            PageView(
+                place: Place(id: 0, name: "天河城", province: "广东省", city: "广州市", area: "天河区", address: "天河区天河城", isUse: 1, x: 113.322647, y: 23.131985, count: 10, good: 5, bad: 2, num: 3, numJ: 1),
+                favoritePlaceIds: .constant([])
+            )
+        }
     }
 }

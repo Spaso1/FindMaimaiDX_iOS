@@ -2,14 +2,48 @@
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
-	<key>NSAppTransportSecurity</key>
-	<dict>
-		<key>NSAllowsArbitraryLoads</key>
-		<true/>
-	</dict>
-    <key>NSLocationWhenInUseUsageDescription</key>
-    <string>我们需要访问您的位置以获取城市名称和经纬度。</string>
+    <!-- AMap 配置 -->
     <key>AMapAppKey</key>
-    <string>bb0e04ceb735481cf4e461628345f4ec</string>
+    <string>T7hkSpk6b9LXeFF4zsIMcLoQf5O09CrP</string>
+
+    <!-- URL Scheme 配置 -->
+    <key>CFBundleURLTypes</key>
+    <array>
+        <dict>
+            <key>CFBundleURLName</key>
+            <string>org.astral.findmaimaiultra</string>
+            <key>CFBundleURLSchemes</key>
+            <array>
+                <string>org.astral.findmaimaiultra</string>
+            </array>
+        </dict>
+    </array>
+
+    <!-- 网络安全配置 -->
+    <key>NSAppTransportSecurity</key>
+    <dict>
+        <key>NSExceptionDomains</key>
+        <dict>
+            <key>mai.godserver.cn</key>
+            <dict>
+                <key>NSIncludesSubdomains</key>
+                <true/>
+                <key>NSTemporaryExceptionAllowsInsecureHTTPLoads</key>
+                <true/>
+            </dict>
+        </dict>
+    </dict>
+
+    <!-- 摄像头权限描述 -->
+    <key>NSCameraUsageDescription</key>
+    <string>我们需要访问您的摄像头以扫描二维码。</string>
+
+    <!-- 位置权限描述 -->
+    <key>NSLocationWhenInUseUsageDescription</key>
+    <string>我们需要您的位置来提供更好的服务。</string>
+    <key>NSLocationAlwaysUsageDescription</key>
+    <string>我们需要持续访问您的位置以提供后台服务。</string>
+    <key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
+    <string>我们需要持续访问您的位置以提供后台服务。</string>
 </dict>
 </plist>
